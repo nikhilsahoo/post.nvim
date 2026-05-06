@@ -1,14 +1,6 @@
-" Vim syntax file for .http (REST Client) files
+" Vim syntax file for .http (REST Client) files - text format only.
 
 if exists("b:current_syntax")
-  finish
-endif
-
-" If the file is JSON, delegate to json.vim
-let s:first_line = getline(1)
-if s:first_line =~# '^\s*{' || s:first_line =~# '^\s*\[' || s:first_line =~# '^\s*"'
-  runtime! syntax/json.vim
-  let b:current_syntax = "http"
   finish
 endif
 
@@ -35,12 +27,12 @@ syn match httpMethod "^OPTIONS\s"me=e-1
 syn match httpUrl "^\u\+[ \t]\+\zshttps\?://\S\+" contains=httpScheme
 syn match httpScheme "https\?://" contained
 
-" Header line (word-chars followed by colon at line start)
+" Header line
 syn match httpHeaderLine "^\s*[[:alnum:]-]\+:" contains=httpHeaderName
 syn match httpHeaderName "[[:alnum:]-]\+" contained nextgroup=httpHeaderColon skipwhite
 syn match httpHeaderColon ":" contained
 
-" HTTP version (response status)
+" HTTP version
 syn match httpVersion "HTTP/[0-9.]\+"
 syn match httpStatusCode "\s[0-9]\{3\}\s"
 

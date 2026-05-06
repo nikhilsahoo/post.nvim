@@ -184,6 +184,20 @@ function M.setup(opts)
 
   session.gc()
 
+  -- Detect JSON content in .http files BEFORE syntax loads
+  vim.api.nvim_create_autocmd("BufReadPre", {
+    group = augroup,
+    pattern = "*.http",
+    desc = "Detect JSON .http files and set filetype to json",
+    callback = function()
+      local line = vim.api.nvim_buf_get_lines(0, 0, 1, false)[1] or ""
+      local trimmed = line:match("^%s*(.-)%s*$") or ""
+      if trimmed:match("^{") or trimmed:match("^%[") or trimmed:match('^"') then
+        vim.bo.filetype = "json"
+      end
+    end,
+  })
+
   vim.api.nvim_create_autocmd("FileType", {
     group = augroup,
     pattern = config.get().http_filetype,
