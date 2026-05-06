@@ -101,7 +101,9 @@ local function parse_curl_output(output)
         end
       end
     else
-      table.insert(body_lines, line:gsub("\r$", ""))
+      if line ~= nil then
+        table.insert(body_lines, line:gsub("\r$", ""))
+      end
     end
   end
 
