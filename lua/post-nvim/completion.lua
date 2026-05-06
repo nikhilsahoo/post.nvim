@@ -189,8 +189,9 @@ function M.get_completions()
     for _, key in ipairs(candidates) do
       -- Figure out what's already typed after the last quote
       local typed = ""
-      local after_last_brace = before:reverse():match("[%{%}]"):reverse()
-      if after_last_brace then
+      local after_last_brace_match = before:reverse():match("[%{%}]")
+      if after_last_brace_match then
+        local after_last_brace = after_last_brace_match:reverse()
         typed = after_last_brace
       end
       if key:sub(1, #typed):lower() == typed:lower() or typed == "" then
