@@ -1,1 +1,1 @@
-au BufRead,BufNewFile *.jhttp setfiletype jhttp
+au BufRead,BufNewFile *.jhttp setfiletype json

@@ -47,3 +47,11 @@ local ok, completion = pcall(require, "post-nvim.completion")
 if ok then
   completion.register()
 end
+
+-- Set filetype for .jhttp files before syntax loads
+vim.api.nvim_create_autocmd("BufReadPre", {
+  pattern = "*.jhttp",
+  callback = function()
+    vim.bo.filetype = "json"
+  end,
+})
