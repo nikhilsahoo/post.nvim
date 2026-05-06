@@ -41,3 +41,9 @@ end, { desc = "Cancel all active HTTP requests" })
 vim.api.nvim_set_keymap("v", "<leader>pr", ":PostRunVisual<CR>", { noremap = true, silent = true, desc = "Run selected HTTP request" })
 -- Normal mode keymap for running buffer request
 vim.api.nvim_set_keymap("n", "<leader>pr", ":PostRun<CR>", { noremap = true, silent = true, desc = "Run HTTP request in buffer" })
+
+-- Register nvim-cmp source
+local ok, completion = pcall(require, "post-nvim.completion")
+if ok then
+  completion.register()
+end
