@@ -130,7 +130,7 @@ function M.send(request, callback)
         end
       end
     end,
-    on_exit = function(_, exit_code)
+    on_exit = function(jid, exit_code)
       local output = table.concat(stdout_data, "\n")
 
       local response
@@ -151,7 +151,7 @@ function M.send(request, callback)
         response = parse_curl_output(output)
       end
 
-      active_jobs[job_id] = nil
+      active_jobs[jid] = nil
 
       if callback then
         callback(response)
