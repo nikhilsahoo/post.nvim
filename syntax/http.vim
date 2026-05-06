@@ -4,8 +4,13 @@ if exists("b:current_syntax")
   finish
 endif
 
-" Include proper JSON syntax for JSON blocks
-syntax include @JSON syntax/json.vim
+" If the file is JSON, delegate to json.vim
+let s:first_line = getline(1)
+if s:first_line =~# '^\s*{' || s:first_line =~# '^\s*\[' || s:first_line =~# '^\s*"'
+  runtime! syntax/json.vim
+  let b:current_syntax = "http"
+  finish
+endif
 
 " Comments
 syn match httpComment "^#.*$" contains=@Spell
@@ -14,14 +19,9 @@ syn match httpComment "^//.*$" contains=@Spell
 " Request delimiter
 syn match httpDelimiter "^###\+$"
 
-" Template variables (work in both text and JSON)
+" Template variables
 syn match httpVariable "{{[[:alnum:]_]\+}}"
 
-" JSON body region using proper JSON syntax engine
-syn region httpJsonBlock matchgroup=NONE start="^\s*{" end="^\s*}" contains=@JSON keepend extend
-syn region httpJsonBlock matchgroup=NONE start="^\s*\[" end="^\s*\]" contains=@JSON keepend extend
-
-" Text-format patterns for request lines (not inside JSON)
 " HTTP method at start of line
 syn match httpMethod "^GET\s"me=e-1
 syn match httpMethod "^POST\s"me=e-1
@@ -35,12 +35,12 @@ syn match httpMethod "^OPTIONS\s"me=e-1
 syn match httpUrl "^\u\+[ \t]\+\zshttps\?://\S\+" contains=httpScheme
 syn match httpScheme "https\?://" contained
 
-" Header line (not inside JSON, not starting with method)
+" Header line (word-chars followed by colon at line start)
 syn match httpHeaderLine "^\s*[[:alnum:]-]\+:" contains=httpHeaderName
 syn match httpHeaderName "[[:alnum:]-]\+" contained nextgroup=httpHeaderColon skipwhite
 syn match httpHeaderColon ":" contained
 
-" HTTP version (in response status lines)
+" HTTP version (response status)
 syn match httpVersion "HTTP/[0-9.]\+"
 syn match httpStatusCode "\s[0-9]\{3\}\s"
 
