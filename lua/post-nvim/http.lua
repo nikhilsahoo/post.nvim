@@ -4,6 +4,16 @@ local M = {}
 
 local active_jobs = {}
 
+local reason_phrases = {
+  [200] = "OK", [201] = "Created", [202] = "Accepted", [204] = "No Content",
+  [301] = "Moved Permanently", [302] = "Found", [304] = "Not Modified",
+  [400] = "Bad Request", [401] = "Unauthorized", [403] = "Forbidden",
+  [404] = "Not Found", [405] = "Method Not Allowed", [408] = "Request Timeout",
+  [409] = "Conflict", [422] = "Unprocessable Entity", [429] = "Too Many Requests",
+  [500] = "Internal Server Error", [502] = "Bad Gateway", [503] = "Service Unavailable",
+  [504] = "Gateway Timeout",
+}
+
 local function build_curl_args(request)
   local args = { "curl", "-s", "-S", "-i", "-w", "\n%{http_code}\n%{content_type}" }
 
@@ -61,22 +71,19 @@ local function parse_curl_output(output)
     return response
   end
 
-  local http_code = 0
-  local content_type = ""
-
   local lines = vim.split(output, "\n")
   local status_line_found = false
   local in_headers = true
   local body_lines = {}
 
-  -- curl -i outputs headers first, then body. The -w format adds two extra lines at the end.
   for i, line in ipairs(lines) do
-    -- Skip the trailing metadata lines from -w format
     if line:match("^%d+$") then
-      http_code = tonumber(line)
+      if not status_line_found and tonumber(line) then
+        response.status = tonumber(line)
+      end
       in_headers = false
     elseif line:match("^[a-z]+/[a-z0-9.+-]+") and i == #lines then
-      content_type = line
+      -- content_type from -w format
     elseif in_headers then
       if line:match("^HTTP/") then
         status_line_found = true
@@ -84,29 +91,28 @@ local function parse_curl_output(output)
         if code then
           response.status = tonumber(code)
         end
-        local _, _, reason = line:find("%d+ (.+)$")
-        if reason then
-          response.reason = reason:gsub("\r$", "")
+        local r = line:match("^HTTP/%S+ %d+%s+(.-)%s*\r*$")
+        if r and r ~= "" then
+          response.reason = r
+        elseif response.status > 0 then
+          response.reason = reason_phrases[response.status] or "Unknown"
         end
-      elseif line == "" then
+      elseif line == "" or line == "\r" then
         in_headers = false
       elseif status_line_found then
         local key, value = line:match("^([%w%-]+)%s*:%s*(.+)$")
         if key and value then
-          response.headers[key] = value
-          response.headers[key:lower()] = value
+          local v = value:gsub("\r$", "")
+          response.headers[key] = v
+          response.headers[key:lower()] = v
         end
       end
     else
-      table.insert(body_lines, line)
+      table.insert(body_lines, line:gsub("\r$", ""))
     end
   end
 
   response.body = table.concat(body_lines, "\n")
-
-  if http_code > 0 and response.status == 0 then
-    response.status = http_code
-  end
 
   return response
 end
