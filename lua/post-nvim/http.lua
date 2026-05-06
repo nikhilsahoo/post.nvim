@@ -15,7 +15,7 @@ local reason_phrases = {
 }
 
 local function build_curl_args(request)
-  local args = { "curl", "-s", "-S", "-i", "-w", "\n%{http_code}\n%{content_type}" }
+  local args = { "curl", "-s", "-S", "-i" }
 
   local c = config.get().curl
 
@@ -77,14 +77,7 @@ local function parse_curl_output(output)
   local body_lines = {}
 
   for i, line in ipairs(lines) do
-    if line:match("^%d+$") then
-      if not status_line_found and tonumber(line) then
-        response.status = tonumber(line)
-      end
-      in_headers = false
-    elseif line:match("^[a-z]+/[a-z0-9.+-]+") and i == #lines then
-      -- content_type from -w format
-    elseif in_headers then
+    if in_headers then
       if line:match("^HTTP/") then
         status_line_found = true
         local _, _, code = line:find("HTTP/%S+ (%d+)")
