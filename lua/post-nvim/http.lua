@@ -78,14 +78,15 @@ local function parse_curl_output(output)
     elseif line:match("^[a-z]+/[a-z0-9.+-]+") and i == #lines then
       content_type = line
     elseif in_headers then
-      if line:match("^HTTP/%d%.%d") then
+      if line:match("^HTTP/") then
         status_line_found = true
-        local _, _, code, reason = line:find("^HTTP/%d%.%d (%d+) (.+)$")
+        local _, _, code = line:find("HTTP/%S+ (%d+)")
         if code then
           response.status = tonumber(code)
         end
+        local _, _, reason = line:find("%d+ (.+)$")
         if reason then
-          response.reason = reason
+          response.reason = reason:gsub("\r$", "")
         end
       elseif line == "" then
         in_headers = false
