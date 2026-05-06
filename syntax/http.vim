@@ -12,68 +12,73 @@ syn match httpComment "^//.*$" contains=@Spell
 " Request delimiter
 syn match httpDelimiter "^###\+$"
 
-" HTTP method
-syn match httpMethod "^\s*\zsGET\ze\s" nextgroup=httpUrl skipwhite
-syn match httpMethod "^\s*\zsPOST\ze\s" nextgroup=httpUrl skipwhite
-syn match httpMethod "^\s*\zsPUT\ze\s" nextgroup=httpUrl skipwhite
-syn match httpMethod "^\s*\zsDELETE\ze\s" nextgroup=httpUrl skipwhite
-syn match httpMethod "^\s*\zsPATCH\ze\s" nextgroup=httpUrl skipwhite
-syn match httpMethod "^\s*\zsHEAD\ze\s" nextgroup=httpUrl skipwhite
-syn match httpMethod "^\s*\zsOPTIONS\ze\s" nextgroup=httpUrl skipwhite
+" Template variables (work in both text and JSON)
+syn match httpVariable "{{[[:alnum:]_]\+}}"
 
-" URL
-syn match httpUrl "\S\+" contained nextgroup=httpVersion skipwhite
-syn match httpUrl "^\s*\zshttps\?://\S\+" contains=httpScheme
-syn match httpScheme "https\?://" contained nextgroup=httpUrlPath
-syn match httpUrlPath "\S\+" contained
+" JSON body - full file or embedded. Use keepend so we don't spill over.
+syn region httpJson matchgroup=NONE start="^\s*{" end="^\s*}" keepend extend fold
+syn region httpJson matchgroup=NONE start="^\s*\[" end="^\s*\]" keepend extend fold
+
+if has("conceal")
+  syn region httpJsonString contained containedin=httpJson matchgroup=jsonQuote start=/"/ skip=/\\"/ end=/"/
+  syn match httpJsonNumber contained containedin=httpJson "\<[0-9.]\+\>"
+  syn match httpJsonBoolean contained containedin=httpJson "\<true\>\|\<false\>"
+  syn match httpJsonNull contained containedin=httpJson "\<null\>"
+  syn match httpJsonKey contained containedin=httpJson "\"[\w_]\+\"\ze\s*:"
+else
+  syn region httpJsonString contained containedin=httpJson start=/"/ skip=/\\"/ end=/"/
+  syn match httpJsonNumber contained containedin=httpJson "\I\<[0-9.]\+\>"
+  syn match httpJsonBoolean contained containedin=httpJson "\I\<true\>\|\<false\>\I"
+  syn match httpJsonNull contained containedin=httpJson "\I\<null\>\I"
+  syn match httpJsonKey contained containedin=httpJson "\"[\w_]\+\"\ze\s*:"
+endif
+
+" Text-format patterns - only match on lines that do NOT start with { [ " or }
+" Check that the line is not inside a JSON body by using nextgroup/contains constraints.
+
+" HTTP method - only at beginning of line, not inside JSON
+syn match httpMethod "^GET\s"me=e-1 nextgroup=httpUrl skipwhite
+syn match httpMethod "^POST\s"me=e-1 nextgroup=httpUrl skipwhite
+syn match httpMethod "^PUT\s"me=e-1 nextgroup=httpUrl skipwhite
+syn match httpMethod "^DELETE\s"me=e-1 nextgroup=httpUrl skipwhite
+syn match httpMethod "^PATCH\s"me=e-1 nextgroup=httpUrl skipwhite
+syn match httpMethod "^HEAD\s"me=e-1 nextgroup=httpUrl skipwhite
+syn match httpMethod "^OPTIONS\s"me=e-1 nextgroup=httpUrl skipwhite
+
+" URL - after method, or standalone URL line. Must not contain {{ }} boundaries.
+syn match httpUrl "^[A-Z]\+[ \t]\+\zshttps\?://\S\+" contains=httpScheme
+syn match httpUrl "^[A-Z]\+[ \t]\+\zs\S\+"
+syn match httpScheme "https\?://" contained
+
+" Header name - line starts with word-characters followed by colon
+" But only on lines that are NOT inside a JSON region
+syn match httpHeaderLine "^\s*[[:alnum:]-]\+:" contains=httpHeaderName
+syn match httpHeaderName "[[:alnum:]-]\+" contained containedin=httpHeaderLine nextgroup=httpHeaderColon skipwhite
+syn match httpHeaderColon ":" contained
 
 " HTTP version (in response status lines)
 syn match httpVersion "HTTP/[0-9.]\+"
 
 " Status code
-syn match httpStatusCode "\s\d\{3\}\s"
+syn match httpStatusCode "\s[0-9]\{3\}\s"
 
-" Header name
-syn match httpHeader "^\s*\zs[[:alnum:]-]\+\(\s*:\s*\|:\)\ze" contains=httpHeaderSep
-syn match httpHeaderSep ":" contained
-
-" Variables in templates (e.g. {{base_url}}, {{token}})
-syn match httpVariable "{{[[:alnum:]_]\+}}"
-
-" JSON body region (after a blank line following headers)
-syn region httpJsonBody start="^\s*{" end="^\s*}" keepend extend
-syn region httpJsonBody start="^\s*\[" end="^\s*\]" keepend extend
-
-" String values in JSON
-syn match httpJsonString "\"[^\"]*\"" contained containedin=httpJsonBody
-
-" Keys in JSON
-syn match httpJsonKey "\"[\w_]\+\"\ze\s*:" contained containedin=httpJsonBody
-
-" Numbers in JSON
-syn match httpJsonNumber "\<[0-9.]\+\>" contained containedin=httpJsonBody
-
-" Booleans and null in JSON
-syn keyword httpJsonBoolean true false contained containedin=httpJsonBody
-syn keyword httpJsonNull null contained containedin=httpJsonBody
-
-" Define highlight groups
+" Highlight groups
 hi def link httpComment           Comment
 hi def link httpDelimiter         Comment
 hi def link httpMethod            Keyword
-hi def link httpScheme            String
-hi def link httpUrlPath           Underlined
 hi def link httpUrl               Underlined
+hi def link httpScheme            String
 hi def link httpVersion           Type
 hi def link httpStatusCode        Number
-hi def link httpHeader            Identifier
-hi def link httpHeaderSep         Delimiter
+hi def link httpHeaderLine        Identifier
+hi def link httpHeaderName        Identifier
+hi def link httpHeaderColon       Delimiter
 hi def link httpVariable          Special
-hi def link httpJsonBody          String
+
 hi def link httpJsonString        String
-hi def link httpJsonKey           Identifier
 hi def link httpJsonNumber        Number
 hi def link httpJsonBoolean       Boolean
 hi def link httpJsonNull          Constant
+hi def link httpJsonKey           Identifier
 
 let b:current_syntax = "http"
